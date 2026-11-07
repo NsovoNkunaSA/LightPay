@@ -107,6 +107,22 @@
 .transaction-amount.received { color: #46724a; }
 .transaction-amount span { color: #9aa39c; font-size: 8px; font-weight: 500; }
 .empty-activity { padding: 34px; color: #7d8981; text-align: center; font-size: 12px; }
+.quick-send-section { margin-top: 28px; }
+.quick-send-heading { display: flex; align-items: end; justify-content: space-between; margin-bottom: 12px; }
+.quick-send-heading .eyebrow { margin: 0 0 6px; color: #96a097; }
+.quick-send-heading h2 { margin: 0; color: #1d2b24; font-size: 16px; font-weight: 650; }
+.contact-list { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.contact-button { display: flex; min-width: 0; align-items: center; gap: 9px; border: 1px solid #e7ebe7; border-radius: 7px; padding: 11px; background: #fff; text-align: left; }
+.contact-button:hover { border-color: #b7c8a4; background: #fbfcf8; }
+.contact-details { display: grid; min-width: 0; flex: 1; gap: 4px; }
+.contact-details b { overflow: hidden; color: #34443a; font-size: 10px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.contact-details small { overflow: hidden; color: #9aa39c; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+.contact-arrow { color: #829186; font-size: 15px; }
+.activity-controls { display: flex; gap: 9px; margin-bottom: 11px; }
+.activity-controls input, .activity-controls select { height: 36px; border: 1px solid #e1e7e1; border-radius: 5px; padding: 0 10px; background: #fff; color: #34443a; font-size: 10px; }
+.activity-controls input { width: min(100%, 290px); }
+.activity-controls input::placeholder { color: #a0aaa2; }
+.activity-controls select { min-width: 145px; }
 .notice { display: flex; align-items: center; gap: 9px; margin: -7px 0 19px; padding: 11px 13px; border: 1px solid #dfe9d2; border-radius: 6px; background: #f6faee; color: #506744; font-size: 11px; }
 .notice > svg { width: 15px; height: 15px; }
 .notice-close { display: grid; width: 23px; height: 23px; place-items: center; margin-left: auto; border: 0; background: transparent; color: #657760; }
@@ -162,6 +178,10 @@
   .desktop-send { width: 40px; min-width: 40px; height: 40px; min-height: 40px; overflow: hidden; justify-content: center; gap: 0; padding: 0; font-size: 0; }
   .desktop-send svg { width: 16px; height: 16px; }
   .overview-grid { grid-template-columns: 1fr; gap: 12px; }
+  .contact-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .contact-button { padding: 9px; }
+  .activity-controls input { flex: 1; width: auto; min-width: 0; }
+  .activity-controls select { min-width: 125px; }
   .balance-panel { min-height: 222px; padding: 20px 18px 14px; }
   .balance-value { font-size: 39px; }
   .transfer-panel { min-height: 210px; padding: 19px; }
