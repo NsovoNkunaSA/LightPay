@@ -54,6 +54,8 @@ function App() {
   const [amount, setAmount] = useState('')
   const [sending, setSending] = useState(false)
   const [notice, setNotice] = useState('')
+  const [activitySearch, setActivitySearch] = useState('')
+  const [activityFilter, setActivityFilter] = useState<'all' | 'sent' | 'received'>('all')
 
   useEffect(() => {
     Promise.all([
@@ -91,7 +93,21 @@ function App() {
     }
   }
 
-  const visibleActivity = activePage === 'activity' ? activity : activity.slice(0, 4)
+  const searchTerm = activitySearch.trim().toLowerCase()
+  const filteredActivity = activity.filter((item) => {
+    const matchesSearch = `${item.recipient} ${item.phone}`.toLowerCase().includes(searchTerm)
+    const matchesDirection = activityFilter === 'all' || item.direction === activityFilter
+    return matchesSearch && matchesDirection
+  })
+  const visibleActivity = activePage === 'activity' ? filteredActivity : activity.slice(0, 4)
+  const quickContacts = Array.from(new Map(activity.map((item) => [item.phone, item])).values()).slice(0, 4)
+
+  function startQuickSend(contact: Transfer) {
+    setRecipient(contact.recipient)
+    setPhone(contact.phone)
+    setAmount('')
+    setSendOpen(true)
+  }
 
   return (
     <div className="app-shell">
@@ -144,8 +160,27 @@ function App() {
             </article>
           </section>}
 
+          {activePage === 'overview' && <section className="quick-send-section" aria-labelledby="quick-send-title">
+            <div className="quick-send-heading"><div><p className="eyebrow">PEER-TO-PEER</p><h2 id="quick-send-title">Quick send</h2></div></div>
+            <div className="contact-list">
+              {quickContacts.map((contact) => <button className="contact-button" key={contact.phone} onClick={() => startQuickSend(contact)}>
+                <span className={`transaction-avatar avatar-${contact.id.length % 4}`}>{contact.recipient.split(' ').map((part) => part[0]).slice(0, 2).join('')}</span>
+                <span className="contact-details"><b>{contact.recipient}</b><small>{contact.phone}</small></span>
+                <span className="contact-arrow" aria-hidden="true">→</span>
+              </button>)}
+            </div>
+          </section>}
+
           <section className="activity-section">
             <div className="section-heading"><div><p className="eyebrow">YOUR MONEY IN MOTION</p><h2>{activePage === 'overview' ? 'Recent activity' : 'All transactions'} <span className="count-badge">{activity.length}</span></h2></div>{activePage === 'overview' && <button className="text-button" onClick={() => setActivePage('activity')}>View all <span>→</span></button>}</div>
+            {activePage === 'activity' && <div className="activity-controls">
+              <input aria-label="Search transactions" value={activitySearch} onChange={(event) => setActivitySearch(event.target.value)} placeholder="Search name or phone" />
+              <select aria-label="Filter transactions" value={activityFilter} onChange={(event) => setActivityFilter(event.target.value as 'all' | 'sent' | 'received')}>
+                <option value="all">All transactions</option>
+                <option value="sent">Sent</option>
+                <option value="received">Received</option>
+              </select>
+            </div>}
             <div className="activity-table">
               <div className="table-head"><span>NAME / PHONE</span><span>DATE</span><span>STATUS</span><span className="amount-heading">AMOUNT</span></div>
               {visibleActivity.map((item) => <div className="transaction-row" key={item.id}>
@@ -154,7 +189,7 @@ function App() {
                 <div><span className={`transaction-status ${item.status}`}>{item.status === 'completed' ? 'Completed' : 'Pending'}</span></div>
                 <div className={`transaction-amount ${item.direction}`}>{item.direction === 'sent' ? '−' : '+'}{item.amount.toFixed(2)} <span>USDT</span></div>
               </div>)}
-              {visibleActivity.length === 0 && <div className="empty-activity">Your first payment will show up here.</div>}
+              {visibleActivity.length === 0 && <div className="empty-activity">{activity.length === 0 ? 'Your first payment will show up here.' : 'No transactions match your search.'}</div>}
             </div>
           </section>
 
