@@ -1,117 +1,3 @@
-import { useEffect, useState, type FormEvent } from 'react'
-import './App.css'
-
-type Transfer = {
-  id: string
-  recipient: string
-  phone: string
-  amount: number
-  direction: 'sent' | 'received'
-  status: 'completed' | 'pending'
-  createdAt: string
-}
-
-type Summary = {
-  balance: number
-  currency: string
-  network: string
-}
-
-const fallbackActivity: Transfer[] = [
-  { id: 'tx-1', recipient: 'Amina Yusuf', phone: '+234 803 442 1180', amount: 48, direction: 'sent', status: 'completed', createdAt: '2026-11-05T09:41:00Z' },
-  { id: 'tx-2', recipient: 'Daniel Okafor', phone: '+234 812 771 9024', amount: 125, direction: 'received', status: 'completed', createdAt: '2026-11-05T08:18:00Z' },
-  { id: 'tx-3', recipient: 'Mama’s Kitchen', phone: '+234 809 315 6042', amount: 16.5, direction: 'sent', status: 'pending', createdAt: '2026-11-04T17:32:00Z' },
-  { id: 'tx-4', recipient: 'Chidi Nwosu', phone: '+234 706 098 4221', amount: 32, direction: 'received', status: 'completed', createdAt: '2026-11-04T12:06:00Z' },
-]
-
-const fallbackSummary: Summary = { balance: 2840.5, currency: 'USDT', network: 'Demo network' }
-
-function Icon({ name }: { name: 'grid' | 'arrow' | 'clock' | 'settings' | 'plus' | 'send' | 'download' | 'more' | 'close' | 'check' | 'wallet' }) {
-  const paths: Record<typeof name, React.ReactNode> = {
-    grid: <><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></>,
-    arrow: <><path d="M7 17 17 7" /><path d="M8 7h9v9" /></>,
-    clock: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>,
-    settings: <><circle cx="12" cy="12" r="3" /><path d="m19.4 15 .1.1 1.4 1.1-1.4 2.4-1.7-.7a8 8 0 0 1-1.7 1l-.3 1.8h-2.8l-.3-1.8a8 8 0 0 1-1.7-1l-1.7.7-1.4-2.4 1.4-1.1a8 8 0 0 1 0-2l-1.4-1.1 1.4-2.4 1.7.7a8 8 0 0 1 1.7-1l.3-1.8h2.8l.3 1.8a8 8 0 0 1 1.7 1l1.7-.7 1.4 2.4-1.4 1.1a8 8 0 0 1 0 2Z" transform="translate(-1 -1) scale(.96)" /></>,
-    plus: <><path d="M12 5v14M5 12h14" /></>,
-    send: <><path d="m21 3-7.5 18-3.5-7-7-3.5L21 3Z" /><path d="M10 14 21 3" /></>,
-    download: <><path d="M12 3v12m-5-5 5 5 5-5" /><path d="M5 17v4h14v-4" /></>,
-    more: <><circle cx="5" cy="12" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" /></>,
-    close: <><path d="m18 6-12 12M6 6l12 12" /></>,
-    check: <path d="m5 12 4 4L19 6" />,
-    wallet: <><rect x="3" y="5" width="18" height="15" rx="2" /><path d="M3 9h18m-5 5h.01" /><path d="M6 5V3h12v2" /></>,
-  }
-
-  return <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">{paths[name]}</svg>
-}
-
-function App() {
-  const [summary, setSummary] = useState(fallbackSummary)
-  const [activity, setActivity] = useState(fallbackActivity)
-  const [activePage, setActivePage] = useState<'overview' | 'activity'>('overview')
-  const [sendOpen, setSendOpen] = useState(false)
-  const [recipient, setRecipient] = useState('')
-  const [phone, setPhone] = useState('')
-  const [amount, setAmount] = useState('')
-  const [sending, setSending] = useState(false)
-  const [notice, setNotice] = useState('')
-  const [activitySearch, setActivitySearch] = useState('')
-  const [activityFilter, setActivityFilter] = useState<'all' | 'sent' | 'received'>('all')
-
-  useEffect(() => {
-    Promise.all([
-      fetch('/api/summary').then((response) => response.ok ? response.json() as Promise<Summary> : Promise.reject()),
-      fetch('/api/activity').then((response) => response.ok ? response.json() as Promise<Transfer[]> : Promise.reject()),
-    ]).then(([nextSummary, nextActivity]) => {
-      setSummary(nextSummary)
-      setActivity(nextActivity)
-    }).catch(() => undefined)
-  }, [])
-
-  async function submitTransfer(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setSending(true)
-    setNotice('')
-    try {
-      const response = await fetch('/api/transfers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recipient, phone, amount: Number(amount) }),
-      })
-      const result = await response.json() as { transfer?: Transfer; summary?: Summary; error?: string }
-      if (!response.ok || !result.transfer || !result.summary) throw new Error(result.error ?? 'Transfer could not be completed.')
-      setActivity((current) => [result.transfer!, ...current])
-      setSummary(result.summary)
-      setNotice(`Sent ${Number(amount).toFixed(2)} USDT to ${recipient}.`)
-      setRecipient('')
-      setPhone('')
-      setAmount('')
-      setSendOpen(false)
-    } catch (error) {
-      setNotice(error instanceof Error ? error.message : 'Could not reach the payment service.')
-    } finally {
-      setSending(false)
-    }
-  }
-
-  const searchTerm = activitySearch.trim().toLowerCase()
-  const filteredActivity = activity.filter((item) => {
-    const matchesSearch = `${item.recipient} ${item.phone}`.toLowerCase().includes(searchTerm)
-    const matchesDirection = activityFilter === 'all' || item.direction === activityFilter
-    return matchesSearch && matchesDirection
-  })
-  const visibleActivity = activePage === 'activity' ? filteredActivity : activity.slice(0, 4)
-  const quickContacts = Array.from(new Map(activity.map((item) => [item.phone, item])).values()).slice(0, 4)
-
-  function startQuickSend(contact: Transfer) {
-    setRecipient(contact.recipient)
-    setPhone(contact.phone)
-    setAmount('')
-    setSendOpen(true)
-  }
-
-  return (
-    <div className="app-shell">
-      <aside className="sidebar">
         <a className="brand" href="#overview" onClick={() => setActivePage('overview')} aria-label="LightPay home">
           <span className="brand-mark"><span /></span><span>lightpay</span>
         </a>
@@ -123,15 +9,15 @@ function App() {
         </nav>
         <div className="sidebar-bottom">
           <div className="network-status"><span className="status-dot" /><span><b>USDT wallet</b><small>Demo mode</small></span><Icon name="more" /></div>
-          <button className="nav-item settings-item" onClick={() => setNotice('Account settings will be available after kickoff.')}><Icon name="settings" />Settings</button>
-          <div className="profile-row"><div className="profile-avatar">JS</div><span><b>Nsovo Nkuna</b><small>Personal account</small></span><Icon name="more" /></div>
+          <button className="nav-item settings-item" onClick={() => setSettingsOpen(true)}><Icon name="settings" />Settings</button>
+          <button className="profile-row profile-edit-trigger" onClick={() => setProfileOpen(true)}><div className="profile-avatar">{profileName.split(' ').map((part) => part[0]).slice(0, 2).join('').toUpperCase()}</div><span><b>{profileName}</b><small>Personal account · Edit profile</small></span><Icon name="more" /></button>
         </div>
       </aside>
 
       <main className="main-content" id="overview">
         <header className="topbar">
           <div className="breadcrumb"><span>Wallet</span><span className="crumb-slash">/</span><b>{activePage === 'overview' ? 'Overview' : 'Activity'}</b></div>
-          <div className="topbar-right"><span className="demo-chip"><span />DEMO MODE</span><button className="icon-button top-avatar" aria-label="Nsovo Nkuna account">JS</button></div>
+          <div className="topbar-right"><span className="demo-chip"><span />DEMO MODE</span><button className="icon-button top-avatar" aria-label={`${profileName} account`}>{profileName.split(' ').map((part) => part[0]).slice(0, 2).join('').toUpperCase()}</button></div>
         </header>
 
         <div className="content-wrap">
@@ -145,8 +31,8 @@ function App() {
           {activePage === 'overview' && <section className="overview-grid" aria-label="Wallet overview">
             <article className="balance-panel">
               <div className="balance-heading"><span>AVAILABLE BALANCE</span><span className="balance-network"><span />{summary.network}</span></div>
-              <div className="balance-value">{summary.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}<span>USDT</span></div>
-              <div className="balance-caption">Tether USD · Demo balance</div>
+              <div className="balance-value">{summary.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}<span>{currency}</span></div>
+              <div className="balance-caption">Wallet balance · Demo balance</div>
               <div className="balance-divider" />
               <div className="balance-actions"><button onClick={() => setNotice('Cash-in options will be configured with the kickoff resources.')}><Icon name="plus" />Add money</button><button onClick={() => setSendOpen(true)}><Icon name="send" />Send</button><button onClick={() => setNotice('Your demo wallet statement is being prepared.')}><Icon name="download" />Request</button></div>
               <div className="balance-art" aria-hidden="true"><i /><i /><i /></div>
@@ -168,6 +54,7 @@ function App() {
                 <span className="contact-details"><b>{contact.recipient}</b><small>{contact.phone}</small></span>
                 <span className="contact-arrow" aria-hidden="true">→</span>
               </button>)}
+              {quickContacts.map((contact) => <button className="contact-edit-button" key={`edit-${contact.phone}`} onClick={() => openContactEditor(contact)}>Edit {contact.recipient}</button>)}
             </div>
           </section>}
 
@@ -183,7 +70,7 @@ function App() {
             </div>}
             <div className="activity-table">
               <div className="table-head"><span>NAME / PHONE</span><span>DATE</span><span>STATUS</span><span className="amount-heading">AMOUNT</span></div>
-              {visibleActivity.map((item) => <div className="transaction-row" key={item.id}>
+              {visibleActivity.map((item) => <div className="transaction-row" key={item.id} onClick={() => setSelectedTransaction(item)} role="button" tabIndex={0} onKeyDown={(event) => { if (event.key === 'Enter') setSelectedTransaction(item) }}>
                 <div className="transaction-person"><div className={`transaction-avatar avatar-${item.id.length % 4}`}>{item.recipient.split(' ').map((part) => part[0]).slice(0, 2).join('')}</div><span><b>{item.recipient}</b><small>{item.phone}</small></span></div>
                 <div className="transaction-date">{new Date(item.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}<small>{new Date(item.createdAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</small></div>
                 <div><span className={`transaction-status ${item.status}`}>{item.status === 'completed' ? 'Completed' : 'Pending'}</span></div>
@@ -216,8 +103,26 @@ function App() {
           </form>
         </section>
       </div>}
-    </div>
-  )
-}
 
-export default App
+      {profileOpen && <div className="modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setProfileOpen(false) }}>
+        <section className="send-modal management-modal" role="dialog" aria-modal="true" aria-labelledby="profile-title">
+          <div className="modal-heading"><div><p className="eyebrow">ACCOUNT</p><h2 id="profile-title">Edit profile</h2></div><button className="icon-button close-button" onClick={() => setProfileOpen(false)} aria-label="Close"><Icon name="close" /></button></div>
+          <form onSubmit={saveProfile}><label htmlFor="profile-name">Full name</label><input id="profile-name" value={profileName} onChange={(event) => setProfileName(event.target.value)} required maxLength={70} /><label htmlFor="profile-email">Email address</label><input id="profile-email" type="email" value={profileEmail} onChange={(event) => setProfileEmail(event.target.value)} placeholder="you@example.com" /><button className="primary-button modal-submit" type="submit">Save profile</button></form>
+        </section>
+      </div>}
+
+      {settingsOpen && <div className="modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setSettingsOpen(false) }}>
+        <section className="send-modal management-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+          <div className="modal-heading"><div><p className="eyebrow">PREFERENCES</p><h2 id="settings-title">Wallet settings</h2></div><button className="icon-button close-button" onClick={() => setSettingsOpen(false)} aria-label="Close"><Icon name="close" /></button></div>
+          <form onSubmit={saveSettings}><label htmlFor="wallet-currency">Display currency</label><select id="wallet-currency" value={currency} onChange={(event) => setCurrency(event.target.value)}><option value="USDT">USDT</option><option value="USD">USD</option><option value="ZAR">ZAR</option><option value="NGN">NGN</option></select><label htmlFor="wallet-network">Network label</label><input id="wallet-network" value={network} onChange={(event) => setNetwork(event.target.value)} required maxLength={40} /><p className="modal-description">Currency changes here only change the wallet label; no exchange-rate conversion occurs. Transfers and transaction records remain in USDT.</p><button className="primary-button modal-submit" type="submit">Save settings</button></form>
+        </section>
+      </div>}
+
+      {editingContact && <div className="modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setEditingContact(null) }}>
+        <section className="send-modal management-modal" role="dialog" aria-modal="true" aria-labelledby="contact-title">
+          <div className="modal-heading"><div><p className="eyebrow">SAVED CONTACT</p><h2 id="contact-title">Edit contact</h2></div><button className="icon-button close-button" onClick={() => setEditingContact(null)} aria-label="Close"><Icon name="close" /></button></div>
+          <form onSubmit={saveContact}><label htmlFor="contact-name">Recipient name</label><input id="contact-name" value={contactName} onChange={(event) => setContactName(event.target.value)} required maxLength={70} /><label htmlFor="contact-phone">Mobile number</label><input id="contact-phone" value={contactPhone} onChange={(event) => setContactPhone(event.target.value)} required maxLength={24} /><button className="primary-button modal-submit" type="submit">Save contact</button></form>
+        </section>
+      </div>}
+
+      {selectedTransaction && <div className="modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedTransaction(null) }}>
